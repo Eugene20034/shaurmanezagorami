@@ -591,29 +591,73 @@
         if (e.key === 'ArrowRight') movingRight = false;
     });
 
-    // Управление пальцем / мышью (левая или правая половина экрана)
+    // --- УПРАВЛЕНИЕ ПАЛЬЦЕМ / МЫШЬЮ (ПОЛОВИНЫ ЭКРАНА) ---
+    // Определяем, на какой половине экрана находится палец/мышь, а затем держим направление
+    let isPointerDown = false;
+    let pointerSide = 'none'; // 'left' или 'right'
+
     gameContainer.addEventListener('touchstart', (e) => {
         e.preventDefault();
         let x = e.touches[0].clientX;
-        if (x < window.innerWidth / 2) movingLeft = true;
-        else movingRight = true;
+        if (x < window.innerWidth / 2) {
+            pointerSide = 'left';
+        } else {
+            pointerSide = 'right';
+        }
+        isPointerDown = true;
+    });
+
+    gameContainer.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        let x = e.touches[0].clientX;
+        if (x < window.innerWidth / 2) {
+            pointerSide = 'left';
+        } else {
+            pointerSide = 'right';
+        }
     });
 
     gameContainer.addEventListener('touchend', (e) => {
         e.preventDefault();
-        movingLeft = false;
-        movingRight = false;
+        isPointerDown = false;
+        pointerSide = 'none';
     });
 
     gameContainer.addEventListener('mousedown', (e) => {
-        if (e.clientX < window.innerWidth / 2) movingLeft = true;
-        else movingRight = true;
+        if (e.clientX < window.innerWidth / 2) {
+            pointerSide = 'left';
+        } else {
+            pointerSide = 'right';
+        }
+        isPointerDown = true;
+    });
+
+    gameContainer.addEventListener('mousemove', (e) => {
+        if (isPointerDown) {
+            if (e.clientX < window.innerWidth / 2) {
+                pointerSide = 'left';
+            } else {
+                pointerSide = 'right';
+            }
+        }
     });
 
     gameContainer.addEventListener('mouseup', () => {
+        isPointerDown = false;
+        pointerSide = 'none';
+    });
+
+    // В игровом цикле проверяем, что активная сторона экрана
+    if (pointerSide === 'left' && isPointerDown) {
+        movingLeft = true;
+        movingRight = false;
+    } else if (pointerSide === 'right' && isPointerDown) {
+        movingRight = true;
+        movingLeft = false;
+    } else {
         movingLeft = false;
         movingRight = false;
-    });
+    }
 
     showMenu();
 </script>
