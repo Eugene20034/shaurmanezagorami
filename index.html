@@ -33,7 +33,26 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             touch-action: none;
             user-select: none;
+        }
+
+        /* НЕВИДИМЫЕ ЗОНЫ УПРАВЛЕНИЯ - изначально неактивны */
+        #touch-left, #touch-right {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            z-index: -1; /* Перекрывают только игру, когда активны */
+            opacity: 0;
             cursor: pointer;
+            pointer-events: none;
+        }
+
+        #touch-left {
+            left: 0;
+        }
+
+        #touch-right {
+            right: 0;
         }
 
         .screen {
@@ -148,19 +167,6 @@
             transform: translate(-50%, -50%);
         }
 
-        .bg-mountains {
-            position: absolute;
-            top: 50px;
-            width: 100%;
-            text-align: center;
-            font-size: 2em;
-            color: #999;
-            letter-spacing: 5px;
-            font-weight: bold;
-            opacity: 0.5;
-            z-index: 0;
-        }
-
         #game-hud {
             position: absolute;
             top: 10px;
@@ -175,7 +181,9 @@
 <body>
 
 <div id="game-container">
-    <div class="bg-mountains">ФОН ГОРЫ</div>
+    <!-- НЕВИДИМЫЕ ЗОНЫ УПРАВЛЕНИЯ (активируются только в игре) -->
+    <div id="touch-left"></div>
+    <div id="touch-right"></div>
 
     <div id="screen-menu" class="screen">
         <div class="logo">логотип</div>
@@ -283,9 +291,18 @@
     // Счётчик последовательных облаков (максимум 2!)
     let cloudCounter = 0;
 
+    // Управление
+    let isPointerDown = false;
+
     function startGame() {
         Object.values(screens).forEach(s => s.classList.add('hidden'));
         screens.game.classList.remove('hidden');
+
+        // Активируем невидимые зоны управления!
+        document.getElementById('touch-left').style.zIndex = '20';
+        document.getElementById('touch-right').style.zIndex = '20';
+        document.getElementById('touch-left').style.pointerEvents = 'auto';
+        document.getElementById('touch-right').style.pointerEvents = 'auto';
 
         score = 0;
         gameActive = true;
@@ -410,7 +427,6 @@
         if (deltaTime > 3) deltaTime = 3;
         lastTime = timestamp;
 
-        // 1. Управление наклоном или стрелками
         if (movingLeft) playerX -= MOVE_SPEED * deltaTime;
         if (movingRight) playerX += MOVE_SPEED * deltaTime;
 
@@ -549,6 +565,12 @@
         gameActive = false;
         cancelAnimationFrame(animationId);
         
+        // Выключаем невидимые зоны!
+        document.getElementById('touch-left').style.zIndex = '-1';
+        document.getElementById('touch-right').style.zIndex = '-1';
+        document.getElementById('touch-left').style.pointerEvents = 'none';
+        document.getElementById('touch-right').style.pointerEvents = 'none';
+
         localStorage.setItem('lastScore', score);
         let maxScore = parseInt(localStorage.getItem('maxScore') || 0);
         if (score > maxScore) localStorage.setItem('maxScore', score);
@@ -563,6 +585,12 @@
         gameActive = false;
         cancelAnimationFrame(animationId);
         
+        // Выключаем невидимые зоны!
+        document.getElementById('touch-left').style.zIndex = '-1';
+        document.getElementById('touch-right').style.zIndex = '-1';
+        document.getElementById('touch-left').style.pointerEvents = 'none';
+        document.getElementById('touch-right').style.pointerEvents = 'none';
+
         localStorage.setItem('lastScore', score);
         let maxScore = parseInt(localStorage.getItem('maxScore') || 0);
         if (score > maxScore) localStorage.setItem('maxScore', score);
@@ -591,73 +619,39 @@
         if (e.key === 'ArrowRight') movingRight = false;
     });
 
-    // --- УПРАВЛЕНИЕ ПАЛЬЦЕМ / МЫШЬЮ (ПОЛОВИНЫ ЭКРАНА) ---
-    // Определяем, на какой половине экрана находится палец/мышь, а затем держим направление
-    let isPointerDown = false;
-    let pointerSide = 'none'; // 'left' или 'right'
-
-    gameContainer.addEventListener('touchstart', (e) => {
+    // --- УПРАВЛЕНИЕ НЕВИДИМЫМИ ЗОНАМИ (просто и надежно) ---
+    document.getElementById('touch-left').addEventListener('pointerdown', (e) => {
         e.preventDefault();
-        let x = e.touches[0].clientX;
-        if (x < window.innerWidth / 2) {
-            pointerSide = 'left';
-        } else {
-            pointerSide = 'right';
-        }
-        isPointerDown = true;
-    });
-
-    gameContainer.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        let x = e.touches[0].clientX;
-        if (x < window.innerWidth / 2) {
-            pointerSide = 'left';
-        } else {
-            pointerSide = 'right';
-        }
-    });
-
-    gameContainer.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        isPointerDown = false;
-        pointerSide = 'none';
-    });
-
-    gameContainer.addEventListener('mousedown', (e) => {
-        if (e.clientX < window.innerWidth / 2) {
-            pointerSide = 'left';
-        } else {
-            pointerSide = 'right';
-        }
-        isPointerDown = true;
-    });
-
-    gameContainer.addEventListener('mousemove', (e) => {
-        if (isPointerDown) {
-            if (e.clientX < window.innerWidth / 2) {
-                pointerSide = 'left';
-            } else {
-                pointerSide = 'right';
-            }
-        }
-    });
-
-    gameContainer.addEventListener('mouseup', () => {
-        isPointerDown = false;
-        pointerSide = 'none';
-    });
-
-    // В игровом цикле проверяем, что активная сторона экрана
-    if (pointerSide === 'left' && isPointerDown) {
         movingLeft = true;
         movingRight = false;
-    } else if (pointerSide === 'right' && isPointerDown) {
+    });
+
+    document.getElementById('touch-left').addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        movingLeft = false;
+    });
+
+    document.getElementById('touch-left').addEventListener('pointerleave', (e) => {
+        e.preventDefault();
+        movingLeft = false;
+    });
+
+    // Правая зона
+    document.getElementById('touch-right').addEventListener('pointerdown', (e) => {
+        e.preventDefault();
         movingRight = true;
         movingLeft = false;
-    } else {
-        movingLeft = false;
+    });
+
+    document.getElementById('touch-right').addEventListener('pointerup', (e) => {
+        e.preventDefault();
         movingRight = false;
-    }
+    });
+
+    document.getElementById('touch-right').addEventListener('pointerleave', (e) => {
+        e.preventDefault();
+        movingRight = false;
+    });
 
     showMenu();
 </script>
