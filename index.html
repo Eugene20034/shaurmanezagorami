@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Доберись до шаурмы</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial Black', sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            /* Адаптивность: масштабируемся под любой экран */
+            width: 100vw;
+            max-width: 100%;
+        }
+
+        #game-container {
+            /* Схема адаптива: экран 380x700, но вписывается в любой девайс */
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: min(100vw, 56.25vh); /* Сохраняет пропорции 9:16 */
+            max-height: 100vh;
+            aspect-ratio: 380 / 700;
+            background-image: url('ph shava/fon.png');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #ccc;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            touch-action: none;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            background-color: rgba(240, 240, 240, 0.8);
+            text-align: center;
+        }
+
+        .hidden { display: none; }
+
+        h1 { font-size: 2.5em; margin: 20px 0; text-transform: uppercase; letter-spacing: 2px; }
+        h2 { font-size: 2em; margin: 10px 0; text-transform: uppercase; }
+        p { font-size: 1.2em; margin: 5px 0; }
+
+        .logo {
+            width: 60%;
+            height: 80px;
+            background-color: #d3d3d3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .btn {
+            width: 220px;
+            height: 60px;
+            background-color: #FFD700;
+            border: none;
+            border-radius: 30px;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #000;
+            margin: 10px 0;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .btn:hover { background-color: #ffcc00; transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
+
+        .info-block {
+            width: 280px;
+            background-color: #FFD700;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            width: 40px;
+            height: 70px;
+            z-index: 3;
+            background-image: url('ph shava/igrok.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .block {
+            position: absolute;
+            width: 90px;
+            height: 25px;
+            z-index: 2;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .block-good { background-image: url('ph shava/blok_1.png'); }
+        .block-moving { background-image: url('ph shava/blok_zem.png'); }
+        .block-break { background-image: url('ph shava/blok_stek.png'); }
+        .block-cloud { background-image: url('ph shava/blok_obl.png'); }
+
+        .shaurma {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #FFD700;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-size: 10px;
+            z-index: 4;
+            border: 2px solid #333;
+            color: #333;
+            transform: translate(-50%, -50%);
+        }
+
+        .bg-mountains {
+            position: absolute;
+            top: 50px;
+            width: 100%;
+            text-align: center;
+            font-size: 2em;
+            color: #999;
+            letter-spacing: 5px;
+            font-weight: bold;
+            opacity: 0.5;
+            z-index: 0;
+        }
+
+        #game-hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.2em;
+            z-index: 5;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="bg-mountains">ФОН ГОРЫ</div>
+
+    <div id="screen-menu" class="screen">
+        <div class="logo">логотип</div>
+        <h1>ДОБЕРИСЬ<br>ДО ШАУРМЫ</h1>
+        <button class="btn" onclick="showRules()">НАЧАТЬ ИГРУ</button>
+        <button class="btn" onclick="showRecords()">РЕКОРД</button>
+    </div>
+
+    <div id="screen-rules" class="screen hidden">
+        <h2>ПРАВИЛА</h2>
+        <div class="info-block">
+            <p>Твоя задача добраться до шаурмы</p>
+            <p style="margin-top: 15px; font-size: 1em; font-weight: normal;">
+                Управление наклоном телефона или стрелками.<br>
+                Набери 1000 очков, чтобы победить
+            </p>
+        </div>
+        <button class="btn" onclick="startGame()">НАЧАТЬ</button>
+        <button class="btn" onclick="showMenu()">МЕНЮ</button>
+    </div>
+
+    <div id="screen-game" class="screen hidden">
+        <div id="game-area">
+            <div id="game-hud">СЧЁТ: <span id="score">0</span></div>
+            <div id="player"></div>
+        </div>
+    </div>
+
+    <div id="screen-lose" class="screen hidden">
+        <h2>СЧЁТ</h2>
+        <div class="info-block">
+            <p id="lose-score-text">КОЛ-ВО ОЧКОВ: 0</p>
+            <p style="font-size: 12px; font-weight: normal;">Ты упал вниз. Попробуй ещё раз!</p>
+        </div>
+        <button class="btn" onclick="startGame()">ЗАНОВО</button>
+        <button class="btn" onclick="showMenu()">МЕНЮ</button>
+    </div>
+
+    <div id="screen-records" class="screen hidden">
+        <div class="logo">логотип</div>
+        <h1>РЕКОРД</h1>
+        <h3 style="margin-top: 20px; font-size: 18px;">ПОСЛЕДНЯЯ ИГРА</h3>
+        <p id="last-score-label">КОЛ-ВО ОЧКОВ</p>
+        <h3 style="margin-top: 20px; font-size: 18px;">МАКСИМУМ</h3>
+        <p id="max-score-label">КОЛ-ВО ОЧКОВ</p>
+        <button class="btn" onclick="showMenu()" style="margin-top: 30px;">МЕНЮ</button>
+    </div>
+</div>
+
+<script>
+    const screens = {
+        menu: document.getElementById('screen-menu'),
+        rules: document.getElementById('screen-rules'),
+        game: document.getElementById('screen-game'),
+        lose: document.getElementById('screen-lose'),
+        records: document.getElementById('screen-records')
+    };
+
+    function showMenu() {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens.menu.classList.remove('hidden');
+    }
+
+    function showRules() {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens.rules.classList.remove('hidden');
+    }
+
+    function showRecords() {
+        document.getElementById('last-score-label').textContent = "КОЛ-ВО ОЧКОВ: " + (localStorage.getItem('lastScore') || 0);
+        document.getElementById('max-score-label').textContent = "КОЛ-ВО ОЧКОВ: " + (localStorage.getItem('maxScore') || 0);
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens.records.classList.remove('hidden');
+    }
+
+    // --- Игровая механика ---
+    let player, playerY, playerX, velocityY;
+    let blocks = [];
+    let score = 0;
+    let gameActive = false;
+    let animationId;
+
+    const GRAVITY = 1.2;
+    const JUMP_FORCE = -27;
+    const MOVE_SPEED = 6;
+
+    const PLAYER_WIDTH = 40;
+    const PLAYER_HEIGHT = 70;
+    const BLOCK_WIDTH = 90;
+    const BLOCK_HEIGHT = 25;
+    const SCREEN_WIDTH = 380;
+    const SCREEN_HEIGHT = 700;
+
+    // Плавная динамическая сложность: шаг блоков зависит от очков
+    let maxBlockY = 0;
+    let goalReached = false;
+    let goalSpawned = false;
+
+    let lastTime = 0;
+    let movingLeft = false;
+    let movingRight = false;
+
+    // Счётчик последовательных облаков (максимум 2!)
+    let cloudCounter = 0;
+
+    // Управление наклоном
+    let tiltValue = 0;
+
+    function startGame() {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens.game.classList.remove('hidden');
+
+        score = 0;
+        gameActive = true;
+        goalReached = false;
+        goalSpawned = false;
+        blocks = [];
+        cloudCounter = 0;
+        tiltValue = 0;
+
+        // Ставим игрока на стартовый блок
+        playerX = 165;
+        playerY = 60;
+        velocityY = JUMP_FORCE; // Сразу прыгаем
+
+        document.querySelectorAll('.block, .shaurma').forEach(el => el.remove());
+        player = document.getElementById('player');
+
+        // === СТАРТОВЫЙ БЛОК ===
+        let startBlock = document.createElement('div');
+        startBlock.className = 'block block-good';
+        startBlock.style.left = (playerX + (PLAYER_WIDTH/2) - (BLOCK_WIDTH/2)) + 'px';
+        startBlock.style.bottom = '40px';
+        startBlock.dataset.type = 'good';
+        startBlock.dataset.scored = 'true';
+        document.getElementById('game-area').appendChild(startBlock);
+        blocks.push(startBlock);
+        maxBlockY = 40;
+
+        // Генерируем блоки с запасом выше экрана
+        while (maxBlockY < 1200) {
+            generateBlock();
+        }
+
+        updateScore();
+        cancelAnimationFrame(animationId);
+        lastTime = performance.now();
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function generateBlock() {
+        // Плавная сложность
+        let currentSpacing = 45 + (2.5 * Math.sqrt(score)) + (3 * Math.sin(score / 20));
+        let step = Math.floor(Math.random() * 20) + currentSpacing;
+        let newY = maxBlockY + step;
+        maxBlockY = newY;
+
+        // Защита от наложения: найди безопасную позицию по X
+        let newX = Math.floor(Math.random() * (SCREEN_WIDTH - BLOCK_WIDTH - 20)) + 10;
+        if (blocks.length > 0) {
+            let lastBlock = blocks[blocks.length - 1];
+            let lastX = parseFloat(lastBlock.style.left);
+            if (Math.abs(newX - lastX) < 50) {
+                newX = Math.max(10, Math.min(SCREEN_WIDTH - BLOCK_WIDTH - 10, lastX + 50));
+            }
+        }
+
+        // Рандомный тип блока (с учётом ограничения на облака!)
+        let type = 'good';
+        let roll = Math.random();
+        
+        // Если уже 2 облака подряд, генерируем обязательно что-то другое!
+        if (cloudCounter >= 2) {
+            type = 'good';
+            cloudCounter = 0;
+        } else {
+            // 60% обычный блок, 40% - усложненный
+            if (roll < 0.2) type = 'moving';
+            else if (roll < 0.4) type = 'break';
+            else if (roll < 0.6) type = 'cloud';
+            else type = 'good';
+        }
+
+        // Учёт последовательности облаков
+        if (type === 'cloud') {
+            cloudCounter++;
+        } else {
+            cloudCounter = 0;
+        }
+
+        let div = document.createElement('div');
+        div.className = 'block';
+        div.style.left = newX + 'px';
+        div.style.bottom = newY + 'px';
+        div.dataset.type = type;
+        div.dataset.scored = 'false';
+
+        // Назначаем класс в зависимости от типа (для CSS картинки)
+        if (type === 'moving') {
+            div.classList.add('block-moving');
+            div.dataset.direction = '1';
+            div.dataset.speed = '2';
+        } else if (type === 'break') {
+            div.classList.add('block-break');
+        } else if (type === 'cloud') {
+            div.classList.add('block-cloud');
+        } else {
+            div.classList.add('block-good');
+        }
+
+        document.getElementById('game-area').appendChild(div);
+        blocks.push(div);
+
+        if (score >= 1000 && !goalSpawned) {
+            let goalDiv = document.createElement('div');
+            goalDiv.className = 'shaurma';
+            goalDiv.textContent = 'ШАУРМА';
+            goalDiv.style.left = (newX + BLOCK_WIDTH / 2) + 'px';
+            goalDiv.style.bottom = (newY + BLOCK_HEIGHT) + 'px';
+            document.getElementById('game-area').appendChild(goalDiv);
+            
+            goalSpawned = true;
+        }
+    }
+
+    function updateScore() {
+        document.getElementById('score').textContent = score;
+    }
+
+    function gameLoop(timestamp) {
+        if (!gameActive) return;
+
+        let deltaTime = (timestamp - lastTime) / 16.667;
+        if (deltaTime > 3) deltaTime = 3;
+        lastTime = timestamp;
+
+        // 1. Управление наклоном или стрелками
+        if (tiltValue > 5) {
+            movingRight = true;
+            movingLeft = false;
+        } else if (tiltValue < -5) {
+            movingLeft = true;
+            movingRight = false;
+        } else {
+            movingLeft = false;
+            movingRight = false;
+        }
+
+        if (movingLeft) playerX -= MOVE_SPEED * deltaTime;
+        if (movingRight) playerX += MOVE_SPEED * deltaTime;
+
+        if (playerX > SCREEN_WIDTH) playerX = -PLAYER_WIDTH;
+        else if (playerX < -PLAYER_WIDTH) playerX = SCREEN_WIDTH;
+
+        // Физика
+        velocityY += GRAVITY * deltaTime;
+        playerY -= velocityY * deltaTime;
+
+        // Исправление лагов: каждый движущийся блок двигается сам по себе
+        for (let i = blocks.length - 1; i >= 0; i--) {
+            let b = blocks[i];
+            if (b.dataset.type === 'moving') {
+                let bLeft = parseFloat(b.style.left);
+                let bDir = parseInt(b.dataset.direction);
+                let bSpeed = parseFloat(b.dataset.speed) * deltaTime;
+                
+                b.style.left = (bLeft + bSpeed * bDir) + 'px';
+                
+                // Ограничение в пределах экрана (разворачиваем только этот блок)
+                if (bLeft < 5) {
+                    b.dataset.direction = '1';
+                }
+                if (bLeft > SCREEN_WIDTH - BLOCK_WIDTH - 5) {
+                    b.dataset.direction = '-1';
+                }
+            }
+        }
+
+        // 1. Столкновения
+        let playerLeft = playerX;
+        let playerRight = playerX + PLAYER_WIDTH;
+        let playerBottom = playerY;
+
+        for (let i = blocks.length - 1; i >= 0; i--) {
+            let b = blocks[i];
+            let bLeft = parseFloat(b.style.left);
+            let bRight = bLeft + BLOCK_WIDTH;
+            let bBottom = parseFloat(b.style.bottom);
+            let bTop = bBottom + BLOCK_HEIGHT;
+
+            // Прозрачный блок - игрок просто летит сквозь него
+            if (b.dataset.type === 'cloud') {
+                continue;
+            }
+
+            if (velocityY > 0 && playerRight > bLeft && playerLeft < bRight) {
+                if (playerBottom <= bTop && playerBottom >= bTop - 30) {
+                    
+                    if (b.dataset.type === 'break') {
+                        // Отражаем игрока, а потом ломаем блок!
+                        playerY = bTop;
+                        velocityY = JUMP_FORCE;
+                        
+                        // Очки за запрыгивание
+                        if (b.dataset.scored === 'false') {
+                            b.dataset.scored = 'true';
+                            score++;
+                            updateScore();
+                        }
+                        
+                        // Ломаем блок после прыжка
+                        b.remove();
+                        blocks.splice(i, 1);
+                        continue;
+                    }
+
+                    playerY = bTop;
+                    velocityY = JUMP_FORCE;
+
+                    // Начисление очков за запрыгивание
+                    if (b.dataset.scored === 'false') {
+                        b.dataset.scored = 'true';
+                        score++;
+                        updateScore();
+                    }
+
+                    // Проверка победы
+                    let shaurmas = document.querySelectorAll('.shaurma');
+                    for (let s of shaurmas) {
+                        if (parseFloat(s.style.left) === bLeft + BLOCK_WIDTH / 2 && bBottom > 0) {
+                            goalReached = true;
+                            setTimeout(winGame, 100);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // 2. Сдвиг координат вниз
+        if (playerY > 350) {
+            let shiftDown = playerY - 350;
+            playerY -= shiftDown;
+            
+            blocks.forEach(b => {
+                let bY = parseFloat(b.style.bottom) - shiftDown;
+                if (bY < -100) b.remove();
+                else b.style.bottom = bY + 'px';
+            });
+            blocks = blocks.filter(b => b.parentNode);
+
+            let shaurmas = document.querySelectorAll('.shaurma');
+            shaurmas.forEach(s => s.style.bottom = (parseFloat(s.style.bottom) - shiftDown) + 'px');
+
+            // ВАЖНО: Сдвигаем сам maxBlockY вниз и продолжаем генерацию!
+            maxBlockY -= shiftDown;
+            while (maxBlockY < playerY + 1200) {
+                generateBlock();
+            }
+        }
+
+        // 3. Обновление отображения + переключение спрайта
+        player.style.left = playerX + 'px';
+        player.style.bottom = playerY + 'px';
+
+        // Если игрок прыгает вверх (velocityY < 0), показываем спрайт "jump"
+        // Если падает или стоит - показываем "igrok"
+        if (velocityY < 0) {
+            player.style.backgroundImage = "url('ph shava/jump.png')";
+        } else {
+            player.style.backgroundImage = "url('ph shava/igrok.png')";
+        }
+
+        // 4. ПРОИГРЫШ: упал ниже 0 пикселей (ниже пола экрана)
+        if (playerY < 0) {
+            gameOver();
+            return;
+        }
+
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver() {
+        gameActive = false;
+        cancelAnimationFrame(animationId);
+        
+        localStorage.setItem('lastScore', score);
+        let maxScore = parseInt(localStorage.getItem('maxScore') || 0);
+        if (score > maxScore) localStorage.setItem('maxScore', score);
+
+        document.getElementById('lose-score-text').textContent = "КОЛ-ВО ОЧКОВ: " + score;
+        
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens.lose.classList.remove('hidden');
+    }
+
+    function winGame() {
+        gameActive = false;
+        cancelAnimationFrame(animationId);
+        
+        localStorage.setItem('lastScore', score);
+        let maxScore = parseInt(localStorage.getItem('maxScore') || 0);
+        if (score > maxScore) localStorage.setItem('maxScore', score);
+
+        document.getElementById('lose-score-text').textContent = "Ты добрался до Шаурмы! Очки: " + score;
+        
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens.lose.classList.remove('hidden');
+    }
+
+    // --- УПРАВЛЕНИЕ ---
+    // Стрелки
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            movingLeft = true;
+        }
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            movingRight = true;
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft') movingLeft = false;
+        if (e.key === 'ArrowRight') movingRight = false;
+    });
+
+    // Управление наклоном телефона (гироскоп) - как в Doodle Jump
+    document.addEventListener('deviceorientation', (e) => {
+        if (e.gamma !== null && e.gamma !== undefined) {
+            // gamma: наклон влево/вправо (-90 до 90)
+            // Масштабируем наклон: пиксель влево/вправо
+            tiltValue = e.gamma; // Напрямую используем угол наклона
+        }
+    });
+
+    // Управление пальцем / мышью (левая или правая половина экрана)
+    gameContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        let x = e.touches[0].clientX;
+        if (x < window.innerWidth / 2) movingLeft = true;
+        else movingRight = true;
+    });
+
+    gameContainer.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        movingLeft = false;
+        movingRight = false;
+    });
+
+    gameContainer.addEventListener('mousedown', (e) => {
+        if (e.clientX < window.innerWidth / 2) movingLeft = true;
+        else movingRight = true;
+    });
+
+    gameContainer.addEventListener('mouseup', () => {
+        movingLeft = false;
+        movingRight = false;
+    });
+
+    showMenu();
+</script>
+</body>
+</html>
