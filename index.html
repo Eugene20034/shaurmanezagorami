@@ -16,9 +16,12 @@
             height: 100vh;
             overflow: hidden;
             width: 100vw;
-            /* Защита от случайного зума */
-            touch-action: manipulation;
+            /* Блокировка зума и двойного тапа */
+            touch-action: none;
             -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #game-container {
@@ -34,8 +37,9 @@
             border: 2px solid #ccc;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            touch-action: manipulation;
+            touch-action: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* НЕВИДИМЫЕ ЗОНЫ УПРАВЛЕНИЯ - изначально неактивны */
@@ -48,6 +52,9 @@
             opacity: 0;
             cursor: pointer;
             pointer-events: none;
+            /* Зоны тоже блокируют двойной тап */
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #touch-left {
@@ -79,7 +86,7 @@
         h2 { font-size: 2em; margin: 10px 0; text-transform: uppercase; }
         p { font-size: 1.2em; margin: 5px 0; }
 
-        /* ЛОГОТИП В ИГРЕ (через обычный img) */
+        /* ЛОГОТИП В ИГРЕ */
         .logo-img {
             width: 60%;
             max-width: 250px;
