@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Доберись до шаурмы</title>
     <style>
         body {
@@ -16,12 +16,8 @@
             height: 100vh;
             overflow: hidden;
             width: 100vw;
-            /* Блокировка зума и двойного тапа */
             touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
         #game-container {
@@ -39,10 +35,8 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             touch-action: none;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* НЕВИДИМЫЕ ЗОНЫ УПРАВЛЕНИЯ - изначально неактивны */
         #touch-left, #touch-right {
             position: absolute;
             top: 0;
@@ -52,18 +46,11 @@
             opacity: 0;
             cursor: pointer;
             pointer-events: none;
-            /* Зоны тоже блокируют двойной тап */
             touch-action: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        #touch-left {
-            left: 0;
-        }
-
-        #touch-right {
-            right: 0;
-        }
+        #touch-left { left: 0; }
+        #touch-right { right: 0; }
 
         .screen {
             position: absolute;
@@ -86,7 +73,6 @@
         h2 { font-size: 2em; margin: 10px 0; text-transform: uppercase; }
         p { font-size: 1.2em; margin: 5px 0; }
 
-        /* ЛОГОТИП В ИГРЕ */
         .logo-img {
             width: 60%;
             max-width: 250px;
@@ -259,6 +245,21 @@
 </div>
 
 <script>
+    // === ЗАЩИТА ОТ ЗУМА (100% РАБОЧИЙ СПОСОБ) ===
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+    document.addEventListener('touchmove', function(e) { 
+        e.preventDefault(); 
+        // Если 2 пальца - это жест щипка, предотвращаем полностью
+        if (e.touches.length > 1) {
+            e.stopPropagation();
+        }
+    }, { passive: false });
+
+    // Блокируем зум через двойной тап
+    document.addEventListener('dblclick', function(e) { e.preventDefault(); });
+
     const screens = {
         menu: document.getElementById('screen-menu'),
         rules: document.getElementById('screen-rules'),
